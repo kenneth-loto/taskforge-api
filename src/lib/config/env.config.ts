@@ -5,5 +5,5 @@ export const envValidationSchema = Joi.object({
   ARCJET_KEY: Joi.string().required(),
   BETTER_AUTH_SECRET: Joi.string().required(),
   BETTER_AUTH_URL: Joi.string().uri().optional(),
-  PORT: Joi.number().port().default(3000),
+  PORT: Joi.number().port().default(8080),
 });
