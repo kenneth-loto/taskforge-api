@@ -1,52 +1,64 @@
-# Memory — Config & Schema Refactor
+# Memory — User Module + Common Infrastructure + Arcjet Extraction
 
 Last updated: 2026-06-29
 
 ## What was built
 
-- **Prisma multi-file schema**: Split `prisma/schema.prisma` into `prisma/models/{user,project,task,comment,auth}.prisma`.
-  `schema.prisma` now holds only `generator` + `datasource` blocks. Updated `prisma.config.ts` to point `schema: "prisma/"`.
-- **Env validation**: Created `src/lib/config/env.config.ts` with Joi schema for `DATABASE_URL`, `ARCJET_KEY`,
-  `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `PORT`. Wired via `ConfigModule.forRoot({ validationSchema })`.
-- **Arcjet async config**: Migrated from `ArcjetModule.forRoot({ key: process.env.ARCJET_KEY! })` to
-  `ArcjetModule.forRootAsync({ useFactory, inject: [ConfigService] })`.
-- **Auth async config**: Migrated from `AuthModule.forRoot({ auth })` (module-level instance) to
-  `AuthModule.forRootAsync({ useFactory, inject: [PrismaService] })`. Refactored `auth.config.ts` from
-  module-level `betterAuth()` call to `createAuth(prisma)` factory function.
-- **ConfigService everywhere**: `PrismaService` now injects `ConfigService` for `DATABASE_URL`.
-  `main.ts` uses `app.get(ConfigService)` for `PORT`. Zero `process.env` in `src/`.
+- **User module** — `src/module/user/` with controller, service, module.
+  `GET /user/all` with `@Roles('ADMIN')`, `GET /user/:id` with `NotFoundException`.
+  Uses custom `RolesGuard` + `@Roles()` decorator from `src/common/`.
+
+- **Common infrastructure** — `src/common/` per AGENTS.md standard:
+  - `decorators/roles.decorator.ts` — custom `@Roles(...)` decorator
+  - `decorators/response-message.decorator.ts` — `@ResponseMessage()` for interceptors
+  - `guards/roles.guard.ts` — reads `'roles'` metadata from reflector, checks `req.user.role`
+  - `interceptors/transform.interceptor.ts` — wraps responses in `{ statusCode, message, data }`
+  - `types/express.d.ts` — augments `Express.User` and `Express.Request`
+
+- **Arcjet security module** — extracted from inline `AppModule` to `src/lib/security/arcjet.module.ts`.
+  Uses `forRootAsync` with `ConfigService` (no `process.env` assertions).
+
+## Changes from original
+
+| Area | Before | After |
+|------|--------|-------|
+| `src/module/` | Did not exist | `user/` module with 2 endpoints |
+| `src/common/` | Did not exist | Decorators, guards, interceptors, types |
+| `src/app.module.ts` | Inline Arcjet config, bodyParser in Auth, ArcjetGuard APP_GUARD | Arcjet extracted to own module, no bodyParser, no ArcjetGuard in AppModule |
+| `src/lib/security/` | Did not exist | `arcjet.module.ts` with forRootAsync |
+| `src/main.ts` | Simple bootstrap, no pipes/interceptors | Global TransformInterceptor, ValidationPipe with `{ message, errors }` format |
+| `prisma.service.ts` | ConfigService injection, no OnModuleDestroy | ConfigService.getOrThrow, OnModuleDestroy with Logger, startup/shutdown logs |
+| `prisma.config.ts` | `process.env.DATABASE_URL` with `!` | Runtime guard with explicit throw |
+| `env.config.ts` | PORT default 3000 | PORT default 8080 |
+| `tsconfig.json` | Basic | Added `resolvePackageJsonExports`, `isolatedModules` |
+| `nest-cli.json` | deleteOutDir only | Unchanged (back to tsc) |
 
 ## Decisions made
 
-- **Joi over class-validator**: NestJS docs present Joi as the primary approach (`validationSchema` property).
-  class-validator + custom `validate()` is the alternative. Stuck with Joi for doc-alignment.
-- **forRootAsync over forRoot**: Both `@arcjet/nest` and `@thallesp/nestjs-better-auth` support `forRootAsync`,
-  allowing config to flow through DI instead of `process.env`.
-- **Shared PrismaClient**: `createAuth` accepts a `PrismaClient` argument instead of creating its own.
-  Injects `PrismaService` (which `extends PrismaClient`) — one connection pool, not two.
-- **getOrThrow + Joi**: Intentional defense in depth. Joi catches at boot, `getOrThrow` is runtime backstop.
-
-## Problems solved
-
-- **Double PrismaClient**: Auth module was creating its own `PrismaPg` adapter + `PrismaClient`, separate from
-  `PrismaService`. Now shares the same instance via `inject: [PrismaService]`.
-- **process.env in module definitions**: Arcjet and Auth modules required config at import time before DI
-  existed. Both have `forRootAsync` — migrated both to the async pattern.
-- **Env validation**: Previously using `class-validator` with a custom `validate()` function (alternative
-  approach per NestJS docs). Replaced with Joi `validationSchema` (primary approach).
+- **No path aliases** — `nest build` uses `tsc` which doesn't transform `paths` in JS output.
+  All imports use relative paths with `.js` extensions (required by `module: nodenext`).
+- **Custom RolesGuard over library** — Built `RolesGuard` in `common/` instead of relying on
+  `@thallesp/nestjs-better-auth`'s `AuthGuard` for role checking. The global `AuthGuard`
+  (registered as `APP_GUARD` by `AuthModule.forRootAsync`) handles authentication only.
+- **Arcjet with forRootAsync** — Uses `ConfigService.getOrThrow` instead of `process.env` assertions.
+- **Prisma with ConfigService** — Injects `ConfigService` for `DATABASE_URL`, no `!` assertions.
 
 ## Current state
 
-- Schema split + validated. Config flows through DI. Zero `process.env` in application code.
-- Arcjet and Auth modules use async factory patterns. All bootstrap-time DI constraints resolved.
-- Next work items are feature modules: Projects, Tasks, Comments.
+- User module works with RolesGuard + custom @Roles for admin protection
+- Arcjet module extracted and using DI for config
+- Global TransformInterceptor wraps all responses
+- ValidationPipe catches NestJS controller validation (whitelist, forbidNonWhitelisted)
+- `@nestjs/mapped-types`, `@swc/cli`, `@swc/core` removed (no longer needed)
+- DTOs removed (no create/update endpoints yet)
+- All imports are relative with .js extensions
 
 ## Next session starts with
 
 - `/remember restore` (required first action)
-- Build Project module (`nest g module projects` in `src/module/`, then controller/service/DTOs)
-- Or `/architect` if not yet clear on the approach
+- Add create/update/delete user endpoints with DTOs, or
+- Start on Project module per the original backlog
 
 ## Open questions
 
-- None
+- Better-auth signup validation error format (`[body.email]` prefix) is baked into better-call's validator and can't be customized without the now-removed middleware approach
