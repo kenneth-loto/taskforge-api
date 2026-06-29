@@ -1,0 +1,19 @@
+model User {
+  id    String  @id @default(cuid())
+  email String  @unique
+  name  String?
+
+  projects      Project[]
+  assignedTasks Task[]    @relation("AssignedTasks")
+  comments      Comment[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  emailVerified Boolean   @default(false)
+  image         String?
+  role          String    @default("MEMBER")
+  sessions      Session[]
+  accounts      Account[]
+
+  @@map("user")
+}
