@@ -10,22 +10,25 @@
 
 ### 1. Database setup (`src/lib/database/`)
 
-- [ ] Prisma installed and connected to a local Postgres DB
-- [ ] `prisma.module.ts` + `prisma.service.ts` created, marked `@Global()`,
+- [x] Prisma installed and connected to a local Postgres DB
+- [x] `prisma.module.ts` + `prisma.service.ts` created, marked `@Global()`,
       imported once in `AppModule`
-- [ ] `.env` + `ConfigModule` wired for DB connection string, auth secret
+- [x] `.env` + `ConfigModule` wired for DB connection string, auth secret
+- [x] Prisma schema split into multi-file structure (`prisma/models/`)
+- [x] Joi validation schema in `src/lib/config/env.config.ts` — validates all
+      env vars at boot with clear error messages
 
 ### 2. Auth module (`src/module/auth/`) — Better Auth
 
-- [ ] `better-auth` + `@thallesp/nestjs-better-auth` installed
-- [ ] Better Auth config (`auth.config.ts`) — Prisma adapter, email+password
+- [x] `better-auth` + `@thallesp/nestjs-better-auth` installed
+- [x] Better Auth config (`auth.config.ts`) — Prisma adapter, email+password
       enabled
-- [ ] `npx @better-auth/cli generate` run — user/session/account/
+- [x] `npx @better-auth/cli generate` run — user/session/account/
       verification models added to `schema.prisma`
-- [ ] `AuthModule.forRoot({ auth })` registered in `AppModule`
-- [ ] `bodyParser: false` set in `main.ts` (required by Better Auth)
-- [ ] Public routes marked with `@Public()` / `@AllowAnonymous()` as needed
-- [ ] `@Session()` used to pull current user off request — no custom
+- [x] `AuthModule.forRoot({ auth })` registered in `AppModule`
+- [x] `bodyParser: false` set in `main.ts` (required by Better Auth)
+- [x] Public routes marked with `@Public()` / `@AllowAnonymous()` as needed
+- [x] `@Session()` used to pull current user off request — no custom
       `@CurrentUser()` decorator needed, Better Auth provides this
 
 ### 3. Project module (`src/module/projects/`)
@@ -55,9 +58,11 @@
 
 ### 6. Cross-cutting
 
+- [x] Arcjet wired in for rate limiting / bot protection
+- [x] Zero `process.env` references in `src/` — all config resolved through
+      `ConfigService` with constructor injection
 - [ ] Global exception filter in `src/common/` — consistent error shape
 - [ ] Global validation pipe (`whitelist: true`, `forbidNonWhitelisted: true`)
-- [ ] Arcjet wired in for rate limiting / bot protection
 - [ ] Response interceptor (if needed) for consistent envelope shape
 - [ ] Swagger fully describes every DTO, every endpoint, every response
 
@@ -66,3 +71,19 @@
 - [ ] Every endpoint manually tested via Swagger UI
 - [ ] Every ownership check has a negative test (user A cannot touch user B's data)
 - [ ] `/review` run against the finished feature set
+
+---
+
+## Infrastructure notes (decisions locked)
+
+- **Env validation**: Joi with `validationSchema` in `ConfigModule.forRoot` (NestJS docs primary approach).
+  Validates at boot, throws clear error on missing/invalid vars.
+- **Config access**: `ConfigService` from `@nestjs/config` injected via constructor — never
+  `process.env` in application code. Exceptions: none remaining.
+- **Arcjet**: `ArcjetModule.forRootAsync` with `useFactory` + `inject: [ConfigService]`.
+- **Better Auth**: `AuthModule.forRootAsync` with `useFactory` + `inject: [PrismaService]`.
+  Shares the same PrismaClient instance as the app — no double connection pool.
+- **Prisma schema**: Multi-file in `prisma/models/` — `user.prisma`, `project.prisma`,
+  `task.prisma`, `comment.prisma`, `auth.prisma`.
+- **Schema config**: `prisma.config.ts` sets `schema: "prisma/"` so CLI discovers all
+  `.prisma` files including subdirectories.
