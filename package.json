@@ -26,7 +26,7 @@
     "test:cov": "node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --coverage",
     "test:debug": "node --inspect-brk --experimental-vm-modules -r tsconfig-paths/register -r ts-node/register node_modules/jest-cli/bin/jest.js --runInBand",
     "test:e2e": "node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --config ./test/jest-e2e.json",
-    "typecheck": "bunx prisma generate && tsc --noEmit"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@arcjet/nest": "^1.5.0",
