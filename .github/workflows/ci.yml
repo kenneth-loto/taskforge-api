@@ -96,6 +96,10 @@ jobs:
         if: needs.changes.outputs.code == 'true'
         run: bun install --frozen-lockfile
 
+      - name: Generate Prisma client
+        if: needs.changes.outputs.code == 'true'
+        run: bunx prisma generate
+
       - name: Run typecheck
         if: needs.changes.outputs.code == 'true'
         run: bun run typecheck

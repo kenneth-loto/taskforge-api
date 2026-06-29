@@ -61,9 +61,9 @@
 - [x] Arcjet wired in for rate limiting / bot protection
 - [x] Zero `process.env` references in `src/` — all config resolved through
       `ConfigService` with constructor injection
-- [ ] Global exception filter in `src/common/` — consistent error shape
-- [ ] Global validation pipe (`whitelist: true`, `forbidNonWhitelisted: true`)
-- [ ] Response interceptor (if needed) for consistent envelope shape
+- [x] Global exception filter in `src/common/` — consistent error shape
+- [x] Global validation pipe (`whitelist: true`, `forbidNonWhitelisted: true`)
+- [x] Response interceptor (if needed) for consistent envelope shape
 - [ ] Swagger fully describes every DTO, every endpoint, every response
 
 ### 7. Before calling it done
