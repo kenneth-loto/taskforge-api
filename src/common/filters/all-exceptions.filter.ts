@@ -27,6 +27,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
           errors: unknown;
         };
         response.status(status).json({ statusCode: status, message, errors });
+
         return;
       }
 
@@ -38,20 +39,42 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (exception instanceof Prisma.PrismaClientKnownRequestError) {
       if (exception.code === "P2002") {
+        const field = (
+          exception.meta as { target?: string[] } | undefined
+        )?.target?.join(", ");
         response.status(HttpStatus.CONFLICT).json({
           statusCode: HttpStatus.CONFLICT,
-          message: "Resource already exists",
+          message: field
+            ? `Resource with this ${field} already exists`
+            : "Resource already exists",
           data: null,
         });
+
         return;
       }
 
       if (exception.code === "P2025") {
+        const cause = (exception.meta as { cause?: string } | undefined)?.cause;
         response.status(HttpStatus.NOT_FOUND).json({
           statusCode: HttpStatus.NOT_FOUND,
-          message: "Resource not found",
+          message: cause ?? "Resource not found",
           data: null,
         });
+
+        return;
+      }
+
+      if (exception.code === "P2003") {
+        const field = (exception.meta as { field_name?: string } | undefined)
+          ?.field_name;
+        response.status(HttpStatus.BAD_REQUEST).json({
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: field
+            ? `Referenced ${field} does not exist`
+            : "Foreign key constraint failed",
+          data: null,
+        });
+
         return;
       }
 
@@ -64,6 +87,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         message: "Database error",
         data: null,
       });
+
       return;
     }
 
