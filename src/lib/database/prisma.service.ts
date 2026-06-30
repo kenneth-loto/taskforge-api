@@ -16,10 +16,11 @@ export class PrismaService
   private readonly logger = new Logger(PrismaService.name);
 
   constructor(configService: ConfigService) {
-    const pool = new PrismaPg({
-      connectionString: configService.getOrThrow("DATABASE_URL"),
-    });
-    super({ adapter: pool });
+    const adapter = new PrismaPg(
+      { connectionString: configService.getOrThrow("DATABASE_URL") },
+      { onPoolError: (err) => this.logger.error("Database pool error", err) },
+    );
+    super({ adapter });
   }
 
   async onModuleInit() {

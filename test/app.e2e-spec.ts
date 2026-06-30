@@ -18,11 +18,14 @@ describe("AppController (e2e)", () => {
     await app.init();
   });
 
-  it("/ (GET)", () => {
+  it("/ (GET) returns welcome message", () => {
     return request(app.getHttpServer())
       .get("/")
       .expect(200)
-      .expect("Hello World!");
+      .expect((res) => {
+        expect(res.body.message).toBe("Welcome to the Taskforge API");
+        expect(res.body.docs).toContain("/docs");
+      });
   });
 
   afterEach(async () => {
