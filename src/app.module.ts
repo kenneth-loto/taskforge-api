@@ -8,6 +8,9 @@ import { envValidationSchema } from "./lib/config/env.config.js";
 import { PrismaModule } from "./lib/database/prisma.module.js";
 import { PrismaService } from "./lib/database/prisma.service.js";
 import { ArcjetSecurityModule } from "./lib/security/arcjet.module.js";
+import { CommentModule } from "./module/comment/comment.module.js";
+import { ProjectModule } from "./module/project/project.module.js";
+import { TaskModule } from "./module/task/task.module.js";
 import { UserModule } from "./module/user/user.module.js";
 
 @Module({
@@ -24,6 +27,9 @@ import { UserModule } from "./module/user/user.module.js";
     }),
     PrismaModule,
     UserModule,
+    ProjectModule,
+    TaskModule,
+    CommentModule,
     ArcjetSecurityModule,
   ],
   controllers: [AppController],

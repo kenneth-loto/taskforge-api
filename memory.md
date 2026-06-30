@@ -1,64 +1,43 @@
-# Memory — User Module + Common Infrastructure + Arcjet Extraction
+# Memory — Swagger, Global Exception Filter, Negative Tests, Layer 3 cleanup
 
-Last updated: 2026-06-29
+Last updated: 2026-06-30
 
 ## What was built
 
-- **User module** — `src/module/user/` with controller, service, module.
-  `GET /user/all` with `@Roles('ADMIN')`, `GET /user/:id` with `NotFoundException`.
-  Uses custom `RolesGuard` + `@Roles()` decorator from `src/common/`.
-
-- **Common infrastructure** — `src/common/` per AGENTS.md standard:
-  - `decorators/roles.decorator.ts` — custom `@Roles(...)` decorator
-  - `decorators/response-message.decorator.ts` — `@ResponseMessage()` for interceptors
-  - `guards/roles.guard.ts` — reads `'roles'` metadata from reflector, checks `req.user.role`
-  - `interceptors/transform.interceptor.ts` — wraps responses in `{ statusCode, message, data }`
-  - `types/express.d.ts` — augments `Express.User` and `Express.Request`
-
-- **Arcjet security module** — extracted from inline `AppModule` to `src/lib/security/arcjet.module.ts`.
-  Uses `forRootAsync` with `ConfigService` (no `process.env` assertions).
-
-## Changes from original
-
-| Area | Before | After |
-|------|--------|-------|
-| `src/module/` | Did not exist | `user/` module with 2 endpoints |
-| `src/common/` | Did not exist | Decorators, guards, interceptors, types |
-| `src/app.module.ts` | Inline Arcjet config, bodyParser in Auth, ArcjetGuard APP_GUARD | Arcjet extracted to own module, no bodyParser, no ArcjetGuard in AppModule |
-| `src/lib/security/` | Did not exist | `arcjet.module.ts` with forRootAsync |
-| `src/main.ts` | Simple bootstrap, no pipes/interceptors | Global TransformInterceptor, ValidationPipe with `{ message, errors }` format |
-| `prisma.service.ts` | ConfigService injection, no OnModuleDestroy | ConfigService.getOrThrow, OnModuleDestroy with Logger, startup/shutdown logs |
-| `prisma.config.ts` | `process.env.DATABASE_URL` with `!` | Runtime guard with explicit throw |
-| `env.config.ts` | PORT default 3000 | PORT default 8080 |
-| `tsconfig.json` | Basic | Added `resolvePackageJsonExports`, `isolatedModules` |
-| `nest-cli.json` | deleteOutDir only | Unchanged (back to tsc) |
+- **Swagger documentation** — `@nestjs/swagger@11.4.5` installed. `DocumentBuilder` + `SwaggerModule.setup("docs", ...)` in `main.ts`. `@ApiTags`, `@ApiOperation`, `@ApiBearerAuth` on all 4 controllers. `@ApiProperty` / `@ApiPropertyOptional` on all DTOs. Bearer auth button in Swagger UI.
+- **Barrel file for Prisma** — `src/common/prisma.ts` exports `Prisma` + `PrismaClient` from generated path. Used by the exception filter.
+- **Global exception filter** — `src/common/filters/all-exceptions.filter.ts` with proper `instanceof Prisma.PrismaClientKnownRequestError` type guard. Handles HttpExceptions, Prisma P2002/P2025, validation error shapes, with `Logger` for unhandled errors.
+- **Bearer auth plugin** — `bearer()` from `better-auth/plugins/bearer` added to `auth.config.ts`. Login now returns `set-auth-token` header for Swagger use.
+- **Negative ownership tests** — `canAccessTask` test block added to `task.service.spec.ts` (4 tests: admin bypass, own task, other's task → ForbiddenException, missing → NotFoundException).
+- **Layer 3 polish** — Removed unused `:userId` param from `unassign` route in `task.controller.ts`. Formatted long import line in `task.service.ts`.
 
 ## Decisions made
 
-- **No path aliases** — `nest build` uses `tsc` which doesn't transform `paths` in JS output.
-  All imports use relative paths with `.js` extensions (required by `module: nodenext`).
-- **Custom RolesGuard over library** — Built `RolesGuard` in `common/` instead of relying on
-  `@thallesp/nestjs-better-auth`'s `AuthGuard` for role checking. The global `AuthGuard`
-  (registered as `APP_GUARD` by `AuthModule.forRootAsync`) handles authentication only.
-- **Arcjet with forRootAsync** — Uses `ConfigService.getOrThrow` instead of `process.env` assertions.
-- **Prisma with ConfigService** — Injects `ConfigService` for `DATABASE_URL`, no `!` assertions.
+- **Swagger auth is Bearer, not cookie** — Better Auth's `bearer()` plugin enables `Authorization: Bearer <session_token>`. The token comes from `set-auth-token` header on login. Cookie auth for Swagger UI was unreliable with HttpOnly cookies.
+- **Exception filter uses barrel import** — `src/common/prisma.ts` re-exports from the generated path to avoid fragile relative paths everywhere.
+- **`canAccessTask` is the single access gate** — used by `CommentService` to check task access before allowing comment reads/writes. All negative edge cases (non-admin accessing other's task, missing task) are now tested directly.
+
+## Problems solved
+
+- Swagger Authorize button didn't work with cookies (HttpOnly). Switched to Bearer plugin — token from login response, paste into Swagger.
+- Exception filter had type safety hole (`as PrismaClientError`) and no logging. Fixed with `instanceof Prisma.PrismaClientKnownRequestError` + `Logger`.
+- `canAccessTask` was only tested through mocks in CommentService, never directly. Added 4 tests in TaskService spec.
+- Unused route parameter `:userId` in `DELETE /:id/assign/:userId` confused the API surface.
 
 ## Current state
 
-- User module works with RolesGuard + custom @Roles for admin protection
-- Arcjet module extracted and using DI for config
-- Global TransformInterceptor wraps all responses
-- ValidationPipe catches NestJS controller validation (whitelist, forbidNonWhitelisted)
-- `@nestjs/mapped-types`, `@swc/cli`, `@swc/core` removed (no longer needed)
-- DTOs removed (no create/update endpoints yet)
-- All imports are relative with .js extensions
+- All 7 modules built (User, Project, Task, Comment, Auth, Database, Arcjet)
+- Swagger at `/docs` with full endpoint descriptions and DTOs
+- Global exception filter handles all error shapes consistently
+- `bearer()` plugin enabled — login returns `set-auth-token`
+- 74/74 tests pass, build clean
+- PLAN.md fully checked except `scope` items (no pagination, soft-delete, etc.)
 
 ## Next session starts with
 
 - `/remember restore` (required first action)
-- Add create/update/delete user endpoints with DTOs, or
-- Start on Project module per the original backlog
+- Nothing urgent — codebase is in a complete, tested state. Possible next steps: pagination, soft-delete, or deployment setup.
 
 ## Open questions
 
-- Better-auth signup validation error format (`[body.email]` prefix) is baked into better-call's validator and can't be customized without the now-removed middleware approach
+- None currently.
