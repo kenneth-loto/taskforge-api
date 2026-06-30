@@ -2,7 +2,6 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { AuthModule } from "@thallesp/nestjs-better-auth";
 import { AppController } from "./app.controller.js";
-import { AppService } from "./app.service.js";
 import { createAuth } from "./lib/auth/auth.config.js";
 import { envValidationSchema } from "./lib/config/env.config.js";
 import { PrismaModule } from "./lib/database/prisma.module.js";
@@ -33,6 +32,5 @@ import { UserModule } from "./module/user/user.module.js";
     ArcjetSecurityModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

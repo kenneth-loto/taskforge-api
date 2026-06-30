@@ -16,7 +16,7 @@ User
 ```
 
 - **Project** — name, description, owned by a User
-- **Task** — title, description, status (`todo` | `in_progress` | `done`),
+- **Task** — title, description, status (`TODO` | `PENDING` | `DONE`),
   priority (`low` | `medium` | `high`), belongs to a Project, optionally
   assigned to a User
 - **Comment** — content, belongs to a Task, written by a User
@@ -28,7 +28,7 @@ User
 - [PostgreSQL](https://www.postgresql.org/) — database
 - [Better Auth](https://www.better-auth.com/) — authentication
   (email + password, session-based)
-- [Arcjet](https://jsm.dev/nestjs-arcjet) — rate limiting / bot protection
+- [Arcjet](https://arcjet.com/) — rate limiting / bot protection / security
 - [Biome](https://biomejs.dev/) — linting and formatting
 - Husky + commitlint — git hooks, conventional commit enforcement
 
@@ -65,7 +65,7 @@ The API will be available at `http://localhost:3000`.
 
 ## API documentation
 
-Swagger UI is available at `/api` once the server is running.
+Swagger UI is available at `/docs` once the server is running.
 
 ## License
 
