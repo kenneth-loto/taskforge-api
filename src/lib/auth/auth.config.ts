@@ -1,5 +1,6 @@
 import { prismaAdapter } from "@better-auth/prisma-adapter";
 import { betterAuth } from "better-auth";
+import { bearer } from "better-auth/plugins/bearer";
 import type { PrismaClient } from "../../generated/prisma/client.js";
 
 export function createAuth(prisma: PrismaClient) {
@@ -20,5 +21,6 @@ export function createAuth(prisma: PrismaClient) {
         },
       },
     },
+    plugins: [bearer()],
   });
 }

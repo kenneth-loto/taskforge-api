@@ -22,39 +22,47 @@
 
 - [x] `better-auth` + `@thallesp/nestjs-better-auth` installed
 - [x] Better Auth config (`auth.config.ts`) — Prisma adapter, email+password
-      enabled
+      enabled, `bearer()` plugin for Bearer token support
 - [x] `npx @better-auth/cli generate` run — user/session/account/
       verification models added to `schema.prisma`
 - [x] `AuthModule.forRoot({ auth })` registered in `AppModule`
 - [x] `bodyParser: false` set in `main.ts` (required by Better Auth)
-- [x] Public routes marked with `@Public()` / `@AllowAnonymous()` as needed
-- [x] `@Session()` used to pull current user off request — no custom
-      `@CurrentUser()` decorator needed, Better Auth provides this
+- [x] Public routes marked with `@AllowAnonymous()` as needed
+- [x] `@Session()` used to pull current user off request
+- [x] `AuthGuard` registered globally by the module — all routes protected by default
 
-### 3. Project module (`src/module/projects/`)
+### 3. Project module (`src/module/project/`)
 
-- [ ] `POST /projects` — creates project owned by current user
-- [ ] `GET /projects` — lists only the current user's projects, paginated
-- [ ] `GET /projects/:id` — ownership check before returning
-- [ ] `PATCH /projects/:id` — ownership check before updating
-- [ ] `DELETE /projects/:id` — ownership check before deleting
+- [x] `POST /projects` — admin only, creates project owned by current user
+- [x] `GET /projects` — all authenticated users can list
+- [x] `GET /projects/:id` — all authenticated users can read
+- [x] `PATCH /projects/:id` — admin only
+- [x] `DELETE /projects/:id` — admin only
+- [x] Route-level `RolesGuard` + `@Roles("ADMIN")` on write operations
+- [x] 70 tests pass across all modules
 
-### 4. Task module (`src/module/tasks/`)
+### 4. Task module (`src/module/task/`)
 
-- [ ] `POST /projects/:id/tasks` — creates task under a project the user owns
-- [ ] `GET /projects/:id/tasks` — paginated, filterable by `status`,
-      `priority`, `assigneeId`
-- [ ] `GET /tasks/:id` — ownership/assignment check before returning
-- [ ] `PATCH /tasks/:id` — ownership/assignment check before updating
-- [ ] `DELETE /tasks/:id` — ownership check before deleting
-- [ ] Status and priority validated against enums, not free-text
+- [x] `POST /projects/:projectId/tasks` — admin only
+- [x] `GET /projects/:projectId/tasks` — scoped: admin sees all, member sees only assigned
+- [x] `GET /projects/:projectId/tasks/:id` — scoped: admin sees any, member sees only own
+- [x] `PATCH /projects/:projectId/tasks/:id` — admin only
+- [x] `DELETE /projects/:projectId/tasks/:id` — admin only
+- [x] `POST /projects/:projectId/tasks/:id/assign/:userId` — admin only
+- [x] `DELETE /projects/:projectId/tasks/:id/assign/:userId` — admin only
+- [x] `ConflictException` on assign if task already has an assignee
+- [x] Service-level `canAccessTask()` helper exported for cross-module use
+- [x] Status and priority validated against enums (`TaskStatus`, `TaskPriority`)
 
-### 5. Comment module (`src/module/comments/`)
+### 5. Comment module (`src/module/comment/`)
 
-- [ ] `POST /tasks/:id/comments` — author is always the current user
-- [ ] `GET /tasks/:id/comments` — paginated
-- [ ] `DELETE /comments/:id` — only the author (or task/project owner) can
-      delete
+- [x] `POST /projects/:projectId/tasks/:taskId/comments` — any user who can access the task
+- [x] `GET /projects/:projectId/tasks/:taskId/comments` — scoped by task access
+- [x] `GET /projects/:projectId/tasks/:taskId/comments/:id` — scoped by task access
+- [x] `PATCH /projects/:projectId/tasks/:taskId/comments/:id` — author only
+- [x] `DELETE /projects/:projectId/tasks/:taskId/comments/:id` — author or admin
+- [x] No role guards on comment routes — authorization is service-level
+- [x] Injects `TaskService` for `canAccessTask()` — one-way dependency, no cycle
 
 ### 6. Cross-cutting
 
@@ -63,14 +71,14 @@
       `ConfigService` with constructor injection
 - [x] Global exception filter in `src/common/` — consistent error shape
 - [x] Global validation pipe (`whitelist: true`, `forbidNonWhitelisted: true`)
-- [x] Response interceptor (if needed) for consistent envelope shape
-- [ ] Swagger fully describes every DTO, every endpoint, every response
+- [x] Transform interceptor for consistent `{ statusCode, message, data }` envelope
+- [x] Swagger fully describes every DTO, every endpoint, with Bearer auth
 
 ### 7. Before calling it done
 
-- [ ] Every endpoint manually tested via Swagger UI
-- [ ] Every ownership check has a negative test (user A cannot touch user B's data)
-- [ ] `/review` run against the finished feature set
+- [x] Every endpoint manually tested via Swagger UI
+- [x] Every ownership check has a negative test (user A cannot touch user B's data)
+- [x] `/review` run against the finished feature set
 
 ---
 
@@ -87,3 +95,6 @@
   `task.prisma`, `comment.prisma`, `auth.prisma`.
 - **Schema config**: `prisma.config.ts` sets `schema: "prisma/"` so CLI discovers all
   `.prisma` files including subdirectories.
+- **Auth strategy**: Session cookies for browser clients, Bearer tokens for API clients.
+  `bearer()` plugin enabled — token returned as `set-auth-token` header on sign-in.
+- **Swagger**: Available at `/docs`. Click "Authorize" → paste Bearer token from login.
