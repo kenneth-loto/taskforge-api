@@ -1,6 +1,5 @@
 import { jest } from "@jest/globals";
 import { Test, TestingModule } from "@nestjs/testing";
-import type { Request } from "express";
 import { ProjectController } from "./project.controller.js";
 import { ProjectService } from "./project.service.js";
 
@@ -11,6 +10,12 @@ const mockProject = {
   createdAt: new Date(),
   updatedAt: new Date(),
   user: { id: "user-1", name: "Test User", email: "test@example.com" },
+};
+
+const mockUser: Express.User = {
+  id: "user-1",
+  email: "test@example.com",
+  role: "MEMBER",
 };
 
 describe("ProjectController", () => {
@@ -35,7 +40,7 @@ describe("ProjectController", () => {
     }).compile();
 
     controller = module.get<ProjectController>(ProjectController);
-    service = module.get(ProjectService);
+    service = module.get(ProjectService) as jest.Mocked<ProjectService>;
   });
 
   afterEach(() => {
@@ -63,12 +68,9 @@ describe("ProjectController", () => {
   describe("create", () => {
     it("calls service.create with dto and req.user.id", async () => {
       const dto = { name: "New Project" };
-      const req = {
-        user: { id: "user-1", email: "test@example.com", role: "MEMBER" },
-      } as unknown as Request;
 
       service.create.mockResolvedValue({ ...mockProject, name: "New Project" });
-      const result = await controller.create(dto, req);
+      const result = await controller.create(dto, mockUser);
 
       expect(result).toEqual({ ...mockProject, name: "New Project" });
       expect(service.create).toHaveBeenCalledWith(dto, "user-1");

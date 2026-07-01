@@ -1,7 +1,5 @@
 import { jest } from "@jest/globals";
-import { UnauthorizedException } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
-import type { Request } from "express";
 import { TaskController } from "./task.controller.js";
 import { TaskService } from "./task.service.js";
 
@@ -17,6 +15,12 @@ const mockTask = {
   updatedAt: new Date(),
   project: { id: "proj-1", name: "Test Project" },
   assignee: { id: "user-1", name: "Test User", email: "test@example.com" },
+};
+
+const mockUser: Express.User = {
+  id: "user-1",
+  email: "test@example.com",
+  role: "MEMBER",
 };
 
 describe("TaskController", () => {
@@ -44,7 +48,7 @@ describe("TaskController", () => {
     }).compile();
 
     controller = module.get<TaskController>(TaskController);
-    taskService = module.get(TaskService);
+    taskService = module.get(TaskService) as jest.Mocked<TaskService>;
   });
 
   afterEach(() => {
@@ -53,12 +57,9 @@ describe("TaskController", () => {
 
   describe("findAll", () => {
     it("returns tasks for the user", async () => {
-      const req = {
-        user: { id: "user-1", email: "test@example.com", role: "MEMBER" },
-      } as unknown as Request;
       taskService.findByProject.mockResolvedValue([mockTask]);
 
-      const result = await controller.findAll("proj-1", req);
+      const result = await controller.findAll("proj-1", mockUser);
 
       expect(result).toEqual([mockTask]);
       expect(taskService.findByProject).toHaveBeenCalledWith(
@@ -67,38 +68,19 @@ describe("TaskController", () => {
         "MEMBER",
       );
     });
-
-    it("throws UnauthorizedException when no user on request", () => {
-      const req = { user: undefined } as unknown as Request;
-
-      expect(() => controller.findAll("proj-1", req)).toThrow(
-        UnauthorizedException,
-      );
-    });
   });
 
   describe("findById", () => {
     it("returns a single task for authorized user", async () => {
-      const req = {
-        user: { id: "user-1", email: "test@example.com", role: "MEMBER" },
-      } as unknown as Request;
       taskService.findByIdScoped.mockResolvedValue(mockTask);
 
-      const result = await controller.findById("task-1", req);
+      const result = await controller.findById("task-1", mockUser);
 
       expect(result).toEqual(mockTask);
       expect(taskService.findByIdScoped).toHaveBeenCalledWith(
         "task-1",
         "user-1",
         "MEMBER",
-      );
-    });
-
-    it("throws UnauthorizedException when no user on request", () => {
-      const req = { user: undefined } as unknown as Request;
-
-      expect(() => controller.findById("task-1", req)).toThrow(
-        UnauthorizedException,
       );
     });
   });

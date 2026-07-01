@@ -1,43 +1,43 @@
-# Memory — Swagger, Global Exception Filter, Negative Tests, Layer 3 cleanup
+# Memory — Code review session: NestJS patterns alignment
 
-Last updated: 2026-06-30
+Last updated: 2026-07-01
 
 ## What was built
 
-- **Swagger documentation** — `@nestjs/swagger@11.4.5` installed. `DocumentBuilder` + `SwaggerModule.setup("docs", ...)` in `main.ts`. `@ApiTags`, `@ApiOperation`, `@ApiBearerAuth` on all 4 controllers. `@ApiProperty` / `@ApiPropertyOptional` on all DTOs. Bearer auth button in Swagger UI.
-- **Barrel file for Prisma** — `src/common/prisma.ts` exports `Prisma` + `PrismaClient` from generated path. Used by the exception filter.
-- **Global exception filter** — `src/common/filters/all-exceptions.filter.ts` with proper `instanceof Prisma.PrismaClientKnownRequestError` type guard. Handles HttpExceptions, Prisma P2002/P2025, validation error shapes, with `Logger` for unhandled errors.
-- **Bearer auth plugin** — `bearer()` from `better-auth/plugins/bearer` added to `auth.config.ts`. Login now returns `set-auth-token` header for Swagger use.
-- **Negative ownership tests** — `canAccessTask` test block added to `task.service.spec.ts` (4 tests: admin bypass, own task, other's task → ForbiddenException, missing → NotFoundException).
-- **Layer 3 polish** — Removed unused `:userId` param from `unassign` route in `task.controller.ts`. Formatted long import line in `task.service.ts`.
+- **`@CurrentUser()` decorator** — `src/common/decorators/current-user.decorator.ts`. A `createParamDecorator` that extracts `req.user` and throws `UnauthorizedException` if absent. Returns fully-typed `Express.User`.
+- **`@Public()` decorator** — `src/common/decorators/public.decorator.ts`. Metadata flag for routes that bypass the global `AuthGuard`.
+- **`AuthGuard`** — `src/common/guards/auth.guard.ts`. Global guard checks `req.user` exists, skips for `@Public()` routes. Registered via `APP_GUARD` with `useExisting`.
+
+## What was fixed
+
+| Issue | Files |
+|---|---|
+| Filter/interceptor instantiated with `new` in `main.ts` — outside DI | `main.ts`, `app.module.ts` |
+| `ArcjetOptionalGuard` not overridable in tests (`useFactory`) | `arcjet.module.ts` |
+| `req.user!` assertions and repeated `if (!user) throw` in controllers | All 3 feature controllers → `@CurrentUser()` |
+| `UpdateCommentDto` hand-written instead of `PartialType` | `update-comment.dto.ts` |
+| `Record<string, unknown>` instead of `Prisma.TaskWhereInput` | `task.service.ts` |
+| Tests casting mock `Request` objects via `as unknown` | 3 controller specs — now pass user directly |
+| `ValidationPipe` missing `transform: true` | `main.ts` |
+| `mockUser.role` missing `as const` | `user.service.spec.ts` |
 
 ## Decisions made
 
-- **Swagger auth is Bearer, not cookie** — Better Auth's `bearer()` plugin enables `Authorization: Bearer <session_token>`. The token comes from `set-auth-token` header on login. Cookie auth for Swagger UI was unreliable with HttpOnly cookies.
-- **Exception filter uses barrel import** — `src/common/prisma.ts` re-exports from the generated path to avoid fragile relative paths everywhere.
-- **`canAccessTask` is the single access gate** — used by `CommentService` to check task access before allowing comment reads/writes. All negative edge cases (non-admin accessing other's task, missing task) are now tested directly.
-
-## Problems solved
-
-- Swagger Authorize button didn't work with cookies (HttpOnly). Switched to Bearer plugin — token from login response, paste into Swagger.
-- Exception filter had type safety hole (`as PrismaClientError`) and no logging. Fixed with `instanceof Prisma.PrismaClientKnownRequestError` + `Logger`.
-- `canAccessTask` was only tested through mocks in CommentService, never directly. Added 4 tests in TaskService spec.
-- Unused route parameter `:userId` in `DELETE /:id/assign/:userId` confused the API surface.
+- **`@CurrentUser()` over `@Req()`** — eliminates non-null assertions (`!`) and repeated null checks. One decorator handles the unauthorized case for every handler. TypeScript infers `Express.User`, not `Express.User | undefined`.
+- **Global AuthGuard + controller-level `@CurrentUser()`** — guard is defense-in-depth + `@Public()` mechanism. Decorator is for TypeScript type narrowing. Both coexist without conflict.
+- **`useExisting` for all `APP_*` providers** — keeps guards/filters/interceptors visible in DI for test overrides.
 
 ## Current state
 
-- All 7 modules built (User, Project, Task, Comment, Auth, Database, Arcjet)
-- Swagger at `/docs` with full endpoint descriptions and DTOs
-- Global exception filter handles all error shapes consistently
-- `bearer()` plugin enabled — login returns `set-auth-token`
-- 74/74 tests pass, build clean
-- PLAN.md fully checked except `scope` items (no pagination, soft-delete, etc.)
+- All 5 code review issues fixed per `/nestjs-patterns` and `/nestjs-jest-prisma-testing` skills
+- 81/81 tests pass, build clean
+- No `as any` anywhere in test files
+- All controllers use `@CurrentUser()` instead of `req.user`
 
 ## Next session starts with
 
 - `/remember restore` (required first action)
-- Nothing urgent — codebase is in a complete, tested state. Possible next steps: pagination, soft-delete, or deployment setup.
 
 ## Open questions
 
-- None currently.
+- None

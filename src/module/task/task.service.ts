@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
+import { Prisma } from "../../common/prisma.js";
 import { PrismaService } from "../../lib/database/prisma.service.js";
 import { CreateTaskDto } from "./dto/create-task.dto.js";
 import { UpdateTaskDto } from "./dto/update-task.dto.js";
@@ -26,7 +27,7 @@ export class TaskService {
       throw new NotFoundException(`Project with id "${projectId}" not found`);
     }
 
-    const where: Record<string, unknown> = { projectId };
+    const where: Prisma.TaskWhereInput = { projectId };
     if (role !== "ADMIN") {
       where.assigneeId = userId;
     }

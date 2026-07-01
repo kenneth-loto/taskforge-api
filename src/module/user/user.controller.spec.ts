@@ -36,7 +36,7 @@ describe("UserController", () => {
     }).compile();
 
     controller = module.get<UserController>(UserController);
-    service = module.get(UserService);
+    service = module.get(UserService) as jest.Mocked<UserService>;
   });
 
   afterEach(() => {

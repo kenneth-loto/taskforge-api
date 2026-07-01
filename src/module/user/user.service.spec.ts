@@ -9,7 +9,7 @@ const mockUser = {
   id: "user-1",
   email: "test@example.com",
   name: "Test User",
-  role: "MEMBER",
+  role: "MEMBER" as const,
   emailVerified: false,
   image: null,
   createdAt: new Date(),
