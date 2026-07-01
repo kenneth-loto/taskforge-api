@@ -1,13 +1,16 @@
+import type { ArcjetNest } from "@arcjet/nest";
 import {
-  ArcjetGuard,
+  ARCJET,
   ArcjetModule,
+  cloudflare,
   detectBot,
   shield,
   slidingWindow,
 } from "@arcjet/nest";
 import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { APP_GUARD } from "@nestjs/core";
+import { APP_GUARD, Reflector } from "@nestjs/core";
+import { ArcjetOptionalGuard } from "../../common/guards/arcjet-optional.guard.js";
 
 @Module({
   imports: [
@@ -15,6 +18,7 @@ import { APP_GUARD } from "@nestjs/core";
       isGlobal: true,
       useFactory: (configService: ConfigService) => ({
         key: configService.getOrThrow("ARCJET_KEY"),
+        proxies: [cloudflare()],
         rules: [
           detectBot({
             mode: "LIVE",
@@ -31,6 +35,13 @@ import { APP_GUARD } from "@nestjs/core";
       inject: [ConfigService],
     }),
   ],
-  providers: [{ provide: APP_GUARD, useClass: ArcjetGuard }],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useFactory: (aj: ArcjetNest, reflector: Reflector) =>
+        new ArcjetOptionalGuard(aj, reflector),
+      inject: [ARCJET, Reflector],
+    },
+  ],
 })
 export class ArcjetSecurityModule {}
