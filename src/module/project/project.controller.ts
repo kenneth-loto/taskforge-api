@@ -6,12 +6,10 @@ import {
   Param,
   Patch,
   Post,
-  Req,
-  UnauthorizedException,
   UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
-import type { Request } from "express";
+import { CurrentUser } from "../../common/decorators/current-user.decorator.js";
 import { ResponseMessage } from "../../common/decorators/response-message.decorator.js";
 import { Roles } from "../../common/decorators/roles.decorator.js";
 import { RolesGuard } from "../../common/guards/roles.guard.js";
@@ -42,13 +40,7 @@ export class ProjectController {
   @Roles("ADMIN")
   @ApiOperation({ summary: "Create a project (admin only)" })
   @ResponseMessage("Project created successfully")
-  create(@Body() dto: CreateProjectDto, @Req() req: Request) {
-    const user = req.user;
-
-    if (!user) {
-      throw new UnauthorizedException();
-    }
-
+  create(@Body() dto: CreateProjectDto, @CurrentUser() user: Express.User) {
     return this.projectService.create(dto, user.id);
   }
 

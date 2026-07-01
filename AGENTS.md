@@ -33,7 +33,10 @@ Do not load any skill by default. Check the task first — only invoke a skill i
 - `/architect` — before building something non-trivial with no plan yet
 - `/review` — when a feature is done and needs a production check
 - `/recover` — when something is broken and the fix isn't obvious
-- `/nestjs-testing` — when writing or fixing any `*.spec.ts` or `*.e2e-spec.ts` file
+- `/nestjs-jest-prisma-testing` — when writing or fixing any `*.spec.ts` or `*.e2e-spec.ts` file
+- `/nestjs-patterns` — when building NestJS feature modules, services, or controllers
+- `/better-auth-best-practices` — when configuring Better Auth server, client, database adapters, session management, or plugins
+- `/create-auth-skill` — when scaffolding or implementing Better Auth authentication
 - `/remember` — at the start of a new session to restore context,
   and at the end to save progress
 
