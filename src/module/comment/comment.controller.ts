@@ -6,11 +6,9 @@ import {
   Param,
   Patch,
   Post,
-  Req,
-  UnauthorizedException,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
-import type { Request } from "express";
+import { CurrentUser } from "../../common/decorators/current-user.decorator.js";
 import { ResponseMessage } from "../../common/decorators/response-message.decorator.js";
 import { CommentService } from "./comment.service.js";
 import { CreateCommentDto } from "./dto/create-comment.dto.js";
@@ -24,13 +22,7 @@ export class CommentController {
 
   @Get()
   @ApiOperation({ summary: "List comments for a task" })
-  findAll(@Param("taskId") taskId: string, @Req() req: Request) {
-    const user = req.user;
-
-    if (!user) {
-      throw new UnauthorizedException();
-    }
-
+  findAll(@Param("taskId") taskId: string, @CurrentUser() user: Express.User) {
     return this.commentService.findByTask(taskId, user.id, user.role);
   }
 
@@ -39,14 +31,8 @@ export class CommentController {
   findById(
     @Param("taskId") _taskId: string,
     @Param("id") id: string,
-    @Req() req: Request,
+    @CurrentUser() user: Express.User,
   ) {
-    const user = req.user;
-
-    if (!user) {
-      throw new UnauthorizedException();
-    }
-
     return this.commentService.findByIdScoped(id, user.id, user.role);
   }
 
@@ -56,14 +42,8 @@ export class CommentController {
   create(
     @Param("taskId") taskId: string,
     @Body() dto: CreateCommentDto,
-    @Req() req: Request,
+    @CurrentUser() user: Express.User,
   ) {
-    const user = req.user;
-
-    if (!user) {
-      throw new UnauthorizedException();
-    }
-
     return this.commentService.create(dto, taskId, user.id, user.role);
   }
 
@@ -73,27 +53,15 @@ export class CommentController {
   update(
     @Param("id") id: string,
     @Body() dto: UpdateCommentDto,
-    @Req() req: Request,
+    @CurrentUser() user: Express.User,
   ) {
-    const user = req.user;
-
-    if (!user) {
-      throw new UnauthorizedException();
-    }
-
     return this.commentService.update(id, dto, user.id);
   }
 
   @Delete(":id")
   @ApiOperation({ summary: "Delete a comment (author or admin)" })
   @ResponseMessage("Comment deleted successfully")
-  delete(@Param("id") id: string, @Req() req: Request) {
-    const user = req.user;
-
-    if (!user) {
-      throw new UnauthorizedException();
-    }
-
+  delete(@Param("id") id: string, @CurrentUser() user: Express.User) {
     return this.commentService.delete(id, user.id, user.role);
   }
 }

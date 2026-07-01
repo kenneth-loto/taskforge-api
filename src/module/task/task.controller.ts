@@ -6,12 +6,10 @@ import {
   Param,
   Patch,
   Post,
-  Req,
-  UnauthorizedException,
   UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
-import type { Request } from "express";
+import { CurrentUser } from "../../common/decorators/current-user.decorator.js";
 import { ResponseMessage } from "../../common/decorators/response-message.decorator.js";
 import { Roles } from "../../common/decorators/roles.decorator.js";
 import { RolesGuard } from "../../common/guards/roles.guard.js";
@@ -27,25 +25,16 @@ export class TaskController {
 
   @Get()
   @ApiOperation({ summary: "List tasks for a project" })
-  findAll(@Param("projectId") projectId: string, @Req() req: Request) {
-    const user = req.user;
-
-    if (!user) {
-      throw new UnauthorizedException();
-    }
-
+  findAll(
+    @Param("projectId") projectId: string,
+    @CurrentUser() user: Express.User,
+  ) {
     return this.taskService.findByProject(projectId, user.id, user.role);
   }
 
   @Get(":id")
   @ApiOperation({ summary: "Get task by ID" })
-  findById(@Param("id") id: string, @Req() req: Request) {
-    const user = req.user;
-
-    if (!user) {
-      throw new UnauthorizedException();
-    }
-
+  findById(@Param("id") id: string, @CurrentUser() user: Express.User) {
     return this.taskService.findByIdScoped(id, user.id, user.role);
   }
 

@@ -1,6 +1,4 @@
-import type { ArcjetNest } from "@arcjet/nest";
 import {
-  ARCJET,
   ArcjetModule,
   cloudflare,
   detectBot,
@@ -9,7 +7,7 @@ import {
 } from "@arcjet/nest";
 import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { APP_GUARD, Reflector } from "@nestjs/core";
+import { APP_GUARD } from "@nestjs/core";
 import { ArcjetOptionalGuard } from "../../common/guards/arcjet-optional.guard.js";
 
 @Module({
@@ -36,12 +34,8 @@ import { ArcjetOptionalGuard } from "../../common/guards/arcjet-optional.guard.j
     }),
   ],
   providers: [
-    {
-      provide: APP_GUARD,
-      useFactory: (aj: ArcjetNest, reflector: Reflector) =>
-        new ArcjetOptionalGuard(aj, reflector),
-      inject: [ARCJET, Reflector],
-    },
+    ArcjetOptionalGuard,
+    { provide: APP_GUARD, useExisting: ArcjetOptionalGuard },
   ],
 })
 export class ArcjetSecurityModule {}
