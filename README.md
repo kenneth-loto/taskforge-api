@@ -63,6 +63,12 @@ The API will be available at `http://localhost:3000`.
 | `bun run test:e2e`   | Run end-to-end tests             |
 | `bun run typecheck`  | Type-check without emitting      |
 
+## Deployment
+
+> Full steps in [`DEPLOYMENT.md`](./DEPLOYMENT.md)
+
+Push to `main` → GitHub Actions builds the Docker image, pushes to GHCR, then triggers Render to pull and deploy.
+
 ## API documentation
 
 Swagger UI is available at `/docs` once the server is running.
