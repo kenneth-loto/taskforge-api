@@ -1,0 +1,25 @@
+name: taskforge-api
+
+secrets:
+  DATABASE_URL:
+    file: ./secrets/database_url.txt
+  BETTER_AUTH_SECRET:
+    file: ./secrets/better_auth_secret.txt
+  ARCJET_KEY:
+    file: ./secrets/arcjet_key.txt
+  BETTER_AUTH_URL:
+    file: ./secrets/better_auth_url.txt
+
+services:
+  web:
+    container_name: taskforge-api
+    image: taskforge-api:latest
+    build:
+      context: .
+    secrets:
+      - DATABASE_URL
+      - BETTER_AUTH_SECRET
+      - ARCJET_KEY
+      - BETTER_AUTH_URL
+    ports:
+      - "8080:8080"
