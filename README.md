@@ -69,6 +69,13 @@ The API will be available at `http://localhost:3000`.
 
 Push to `main` → GitHub Actions builds the Docker image, pushes to GHCR, then triggers Render to pull and deploy.
 
+### Live Demo
+
+- **API**: [taskforge-api-9i9h.onrender.com](https://taskforge-api-9i9h.onrender.com)
+- **Swagger Docs**: [taskforge-api-9i9h.onrender.com/docs](https://taskforge-api-9i9h.onrender.com/docs)
+
+> **Note:** Hosted on Render's free tier — the service sleeps after 15 minutes of inactivity. If the first request hangs, it's waking up (~30 seconds). Just wait and retry.
+
 ## API documentation
 
 Swagger UI is available at `/docs` once the server is running.
