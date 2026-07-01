@@ -1,4 +1,5 @@
 import { Controller, Get } from "@nestjs/common";
+import { AllowAnonymous } from "@thallesp/nestjs-better-auth";
 import { Public } from "./common/decorators/public.decorator.js";
 import { SkipArcjet } from "./common/guards/arcjet-optional.guard.js";
 
@@ -6,6 +7,7 @@ import { SkipArcjet } from "./common/guards/arcjet-optional.guard.js";
 export class AppController {
   @Get()
   @Public()
+  @AllowAnonymous()
   @SkipArcjet()
   getRoot() {
     return {
